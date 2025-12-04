@@ -1,5 +1,5 @@
 import { Room, Client } from "colyseus";
-import { CabinRoomState, Player, MessageType, MoveMessage } from "../schema/GameSchemas";
+import { CabinRoomState, Player, MessageType, MoveMessage, PlayerState, PlayerDirection } from "../schema/GameSchemas";
 
 /**
  * CabinRoom - 游戏房间类
@@ -86,6 +86,7 @@ export class CabinRoom extends Room<CabinRoomState> {
     
     // 将玩家添加到状态中，Colyseus会自动同步给所有客户端
     this.state.players.set(client.sessionId, player);
+    console.log(`Player added to state. Total players: ${this.state.players.size}`);
     
     // 通知所有客户端有新玩家加入
     this.broadcast(MessageType.PLAYER_JOINED, {

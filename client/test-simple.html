@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>像素小屋 - 简单连接测试</h1>
+        
+        <div id="status" class="status info">准备测试连接...</div>
+        
+        <button onclick="testBasicWebSocket()">测试WebSocket连接</button>
+        <button onclick="testColyseusJoin()">测试Colyseus连接</button>
+        <button onclick="clearLogs()">清除日志</button>
+        
+        <div>
+            <h3>连接日志</h3>
+            <pre id="logs"></pre>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/colyseus.js@0.16.22/dist/colyseus.js"></script>
+    <script>
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+        
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            logs.textContent += `[${time}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+        
+        function clearLogs() {
+            logs.textContent = '';
+            status.textContent = '准备测试连接...';
+            status.className = 'status info';
+        }
+        
+        function testBasicWebSocket() {
+            log('测试基本WebSocket连接...');
+            try {
+                const ws = new WebSocket('ws://localhost:2567');
+                
+                ws.onopen = () => {
+                    log('WebSocket连接成功', 'success');
+                    
+                    // 尝试发送一个简单的JSON消息
+                    ws.send(JSON.stringify({
+                        type: 'test',
+                        data: 'hello server'
+                    }));
+                    
+                    // 2秒后关闭
+                    setTimeout(() => {
+                        ws.close();
+                    }, 2000);
+                };
+                
+                ws.onmessage = (event) => {
+                    log(`收到消息: ${event.data}`, 'info');
+                };
+                
+                ws.onerror = (error) => {
+                    log(`WebSocket错误: ${error}`, 'error');
+                };
+                
+                ws.onclose = (event) => {
+                    log(`WebSocket关闭: 代码 ${event.code}, 原因: ${event.reason}`, 'info');
+                };
+            } catch (error) {
+                log(`WebSocket异常: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testColyseusJoin() {
+            log('测试Colyseus连接...');
+            try {
+                log('创建Colyseus客户端...');
+                const client = new Colyseus.Client('ws://localhost:2567');
+                
+                log('尝试加入房间...');
+                const room = await client.joinOrCreate('cabin_room', { 
+                    name: '测试玩家',
+                    debug: true 
+                });
+                
+                log(`成功加入房间! 房间ID: ${room.id}, 会话ID: ${room.sessionId}`, 'success');
+                
+                // 监听房间状态变化
+                room.onStateChange((state) => {
+                    log(`状态更新: 玩家数量 ${state.players.size}`, 'info');
+                    
+                    // 显示玩家列表
+                    if (state.players.size > 0) {
+                        state.players.forEach((player, sessionId) => {
+                            log(`玩家 ${sessionId}: 位置(${player.x}, ${player.y}), 状态:${player.state}, 朝向:${player.direction}`, 'info');
+                        });
+                    }
+                });
+                
+                // 监听玩家加入
+                room.state.players.onAdd((player, sessionId) => {
+                    log(`玩家加入: ${sessionId}`, 'success');
+                });
+                
+                // 监听玩家离开
+                room.state.players.onRemove((player, sessionId) => {
+                    log(`玩家离开: ${sessionId}`, 'info');
+                });
+                
+                // 监听玩家变化
+                room.state.players.forEach((player, sessionId) => {
+                    player.onChange(() => {
+                        log(`玩家 ${sessionId} 位置变化: (${player.x}, ${player.y})`, 'info');
+                    });
+                });
+                
+                // 监听房间消息
+                room.onMessage('*', (type, message) => {
+                    log(`收到消息: 类型 ${type}, 内容 ${JSON.stringify(message)}`, 'info');
+                });
+                
+                // 10秒后自动断开
+                setTimeout(() => {
+                    log('自动断开连接...');
+                    room.leave();
+                }, 10000);
+                
+            } catch (error) {
+                log(`Colyseus连接失败: ${error.message}`, 'error');
+                if (error.stack) {
+                    log(`错误堆栈: ${error.stack}`, 'error');
+                }
+            }
+        }
+        
+        // 页面加载时显示基本信息
+        window.onload = () => {
+            log('页面加载完成，准备进行连接测试');
+            log('提示: 确保服务器正在运行在 http://localhost:2567');
+        };
+    </script>
+</body>
+</html>

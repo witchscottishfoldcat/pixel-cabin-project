@@ -23,7 +23,9 @@ const gameServer = new Server({
 });
 
 // Define our room handler
+console.log("Defining room: cabin_room");
 gameServer.define('cabin_room', CabinRoom);
+console.log("Room defined successfully");
 
 // Start the server
 const port = Number(process.env.PORT) || 2567;

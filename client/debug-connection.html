@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>像素小屋 - 连接调试工具</h1>
+        
+        <div id="status" class="status info">正在检查连接...</div>
+        
+        <h2>测试步骤</h2>
+        <ol>
+            <li>检查服务器是否运行</li>
+            <li>尝试WebSocket连接</li>
+            <li>尝试Colyseus连接</li>
+        </ol>
+        
+        <button onclick="testServerStatus()">测试服务器状态</button>
+        <button onclick="testWebSocketConnection()">测试WebSocket连接</button>
+        <button onclick="testColyseusConnection()">测试Colyseus连接</button>
+        
+        <h2>连接日志</h2>
+        <pre id="logs"></pre>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/colyseus.js@0.16.22/dist/colyseus.js"></script>
+    <script>
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+        
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            logs.textContent += `[${time}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+        
+        async function testServerStatus() {
+            log('检查服务器健康状态...');
+            try {
+                const response = await fetch('http://localhost:2567/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`服务器运行正常: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log(`服务器响应异常: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`服务器连接失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testWebSocketConnection() {
+            log('尝试WebSocket连接...');
+            try {
+                const ws = new WebSocket('ws://localhost:2567');
+                
+                ws.onopen = () => {
+                    log('WebSocket连接成功', 'success');
+                    ws.close();
+                };
+                
+                ws.onerror = (error) => {
+                    log(`WebSocket错误: ${error}`, 'error');
+                };
+                
+                ws.onclose = (event) => {
+                    log(`WebSocket关闭: ${event.code} ${event.reason}`, 'info');
+                };
+            } catch (error) {
+                log(`WebSocket异常: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testColyseusConnection() {
+            log('尝试Colyseus连接...');
+            try {
+                const client = new Colyseus.Client('ws://localhost:2567');
+                const room = await client.joinOrCreate('cabin_room', { name: '调试玩家' });
+                log(`Colyseus连接成功, 房间ID: ${room.id}, 会话ID: ${room.sessionId}`, 'success');
+                
+                room.onLeave(() => {
+                    log('离开房间', 'info');
+                });
+                
+                // 监听状态变化
+                room.onStateChange((state) => {
+                    log(`状态更新: 玩家数量 ${state.players.size}`, 'info');
+                });
+                
+                // 5秒后断开连接
+                setTimeout(() => {
+                    room.leave();
+                    log('主动断开连接', 'info');
+                }, 5000);
+            } catch (error) {
+                log(`Colyseus连接失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 自动运行第一个测试
+        window.onload = () => {
+            testServerStatus();
+        };
+    </script>
+</body>
+</html>

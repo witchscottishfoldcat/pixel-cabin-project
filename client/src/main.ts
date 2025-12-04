@@ -12,7 +12,7 @@ const config: Phaser.Types.Core.GameConfig = {
     physics: {
         default: "arcade",
         arcade: {
-            gravity: { y: 0 }, // Top-down game, no gravity
+            gravity: { y: 0, x: 0 }, // Top-down game, no gravity
             debug: false
         }
     },
@@ -20,4 +20,4 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 // Start the game
-const game = new Phaser.Game(config);
+new Phaser.Game(config);

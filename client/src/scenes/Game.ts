@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { NetworkService } from "../services/Network";
-import { PlayerData } from "../types";
+import { PlayerData } from "../types/GameTypes";
 
 export class GameScene extends Phaser.Scene {
     private network: NetworkService;
@@ -126,8 +126,14 @@ export class GameScene extends Phaser.Scene {
             // Set up listeners for game state changes
             this.setupNetworkListeners();
             
-            // Get initial state
-            this.setupInitialPlayers();
+            // Wait for state to be available before setting up player listeners
+            this.network.waitForState(() => {
+                console.log("Room state is now available, setting up player listeners");
+                this.setupPlayerListeners();
+                
+                // Get initial state
+                this.setupInitialPlayers();
+            });
             
         } catch (error) {
             console.error("Failed to connect to server:", error);
@@ -142,13 +148,27 @@ export class GameScene extends Phaser.Scene {
     }
     
     private setupNetworkListeners(): void {
+        // Listen for game messages
+        this.network.onMessage((type, payload) => {
+            switch (type) {
+                case "player_joined":
+                    console.log("Player joined:", payload.sessionId);
+                    break;
+                case "player_left":
+                    console.log("Player left:", payload.sessionId);
+                    break;
+            }
+        });
+    }
+    
+    private setupPlayerListeners(): void {
         // Listen for new players joining
         this.network.onPlayerAdd((player: PlayerData, sessionId: string) => {
             const sprite = this.add.sprite(player.x, player.y, "player");
             this.players.set(sessionId, sprite);
             
             // Add name label
-            const nameText = this.add.text(player.x, player.y - 20, player.name, {
+            const nameText = this.add.text(player.x, player.y - 20, sessionId.substring(0, 8), {
                 fontSize: "12px",
                 color: "#ffffff",
                 align: "center"
@@ -162,7 +182,7 @@ export class GameScene extends Phaser.Scene {
         });
         
         // Listen for players leaving
-        this.network.onPlayerRemove((player: PlayerData, sessionId: string) => {
+        this.network.onPlayerRemove((_player: PlayerData, sessionId: string) => {
             const sprite = this.players.get(sessionId);
             if (sprite) {
                 const nameText = sprite.getData("nameText");

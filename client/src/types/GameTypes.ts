@@ -38,7 +38,7 @@ export interface PlayerData {
 
 // 与服务器CabinRoomState Schema对应的接口
 export interface RoomState {
-  players: Map<string, PlayerData>;
+  players: { [key: string]: PlayerData };
   mapWidth: number;
   mapHeight: number;
 }
@@ -47,7 +47,7 @@ export interface RoomState {
 export interface ClientPlayer extends PlayerData {
   sessionId: string;  // 会话ID
   // 前端专有数据（不与服务器同步）
-  sprite?: Phaser.GameObjects.Sprite;  // Phaser精灵对象
+  sprite?: any;  // Phaser精灵对象
   isLocalPlayer?: boolean;  // 是否是本地玩家
   playerName?: string;  // 玩家名称（可选）
   // 未来可扩展：
