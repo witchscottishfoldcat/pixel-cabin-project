@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { GameScene } from "./scenes/Game";
 import { UIScene } from "./scenes/UI";
 
+console.log("Main.ts loaded");
+
 // Game configuration
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
@@ -13,11 +15,15 @@ const config: Phaser.Types.Core.GameConfig = {
         default: "arcade",
         arcade: {
             gravity: { y: 0, x: 0 }, // Top-down game, no gravity
-            debug: false
+            debug: true // 启用调试以查看碰撞边界
         }
     },
     scene: [GameScene, UIScene]
 };
 
-// Start the game
-new Phaser.Game(config);
+console.log("Creating Phaser game with config:", config);
+
+// Start game
+const game = new Phaser.Game(config);
+
+console.log("Game created:", game);

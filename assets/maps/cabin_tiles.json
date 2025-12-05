@@ -1,0 +1,91 @@
+{
+  "columns": 4,
+  "image": "",
+  "imageheight": 64,
+  "imagewidth": 128,
+  "margin": 0,
+  "name": "cabin_tiles",
+  "spacing": 0,
+  "tilecount": 8,
+  "tileheight": 32,
+  "tilewidth": 32,
+  "tiles": [
+    {
+      "id": 0,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "floor_wood"
+      }
+    },
+    {
+      "id": 1,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "wall_brick",
+        "collides": true
+      }
+    },
+    {
+      "id": 2,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "carpet_blue"
+      }
+    },
+    {
+      "id": 3,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "table_green",
+        "collides": true
+      }
+    },
+    {
+      "id": 4,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "chair_wood",
+        "collides": true
+      }
+    },
+    {
+      "id": 5,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "lamp_light"
+      }
+    },
+    {
+      "id": 6,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "door_wood",
+        "collides": true
+      }
+    },
+    {
+      "id": 7,
+      "image": "",
+      "imageheight": 32,
+      "imagewidth": 32,
+      "properties": {
+        "name": "cabinet_gray",
+        "collides": true
+      }
+    }
+  ]
+}

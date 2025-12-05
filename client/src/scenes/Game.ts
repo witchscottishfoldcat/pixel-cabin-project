@@ -1,36 +1,42 @@
 import Phaser from "phaser";
-import { NetworkService } from "../services/Network";
-import { PlayerData } from "../types/GameTypes";
+
+console.log("GameScene.ts loaded");
 
 export class GameScene extends Phaser.Scene {
-    private network: NetworkService;
-    private players: Map<string, Phaser.GameObjects.Sprite> = new Map();
     private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
     private playerSpeed = 160;
-    private mySessionId: string = "";
+    private player?: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+    private collisionGroup?: Phaser.Physics.Arcade.StaticGroup;
     
     constructor() {
-        super({ key: "GameScene" });
-        this.network = new NetworkService();
+        console.log("GameScene constructor");
+        super({ 
+            key: "GameScene"
+        });
     }
     
     preload(): void {
-        // Create simple colored rectangles for now as placeholders
-        this.createPlaceholderAssets();
+        console.log("GameScene preload");
+        // 创建临时素材
+        this.createTemporaryAssets();
     }
     
     create(): void {
-        // Set up background
-        this.add.rectangle(400, 300, 800, 600, 0x2c3e50);
+        console.log("GameScene create function");
         
-        // Create grid pattern
-        this.createGridPattern();
+        // 创建简单的地图
+        this.createSimpleMap();
+        
+        // 创建玩家
+        this.player = this.physics.add.sprite(400, 300, "player");
+        this.player.setBounce(0.2);
+        this.player.setCollideWorldBounds(true);
+        
+        // 设置玩家与碰撞的碰撞
+        this.physics.add.collider(this.player, this.collisionGroup!);
         
         // Set up keyboard controls
         this.cursors = this.input.keyboard?.createCursorKeys();
-        
-        // Connect to server
-        this.connectToServer();
         
         // Add UI text
         this.add.text(10, 10, "Pixel Cabin Game", {
@@ -42,180 +48,121 @@ export class GameScene extends Phaser.Scene {
             fontSize: "14px",
             color: "#ffffff"
         });
+        
+        console.log("GameScene create function completed");
     }
     
     update(): void {
-        if (!this.cursors || this.mySessionId === "") return;
-        
-        const myPlayer = this.players.get(this.mySessionId);
-        if (!myPlayer) return;
+        if (!this.cursors || !this.player) return;
         
         let dx = 0, dy = 0;
-        let direction = 0; // default: down
         
         if (this.cursors.left.isDown) {
             dx = -this.playerSpeed;
-            direction = 1; // left
         } else if (this.cursors.right.isDown) {
             dx = this.playerSpeed;
-            direction = 2; // right
         }
         
         if (this.cursors.up.isDown) {
             dy = -this.playerSpeed;
-            direction = 3; // up
         } else if (this.cursors.down.isDown) {
             dy = this.playerSpeed;
-            direction = 0; // down
         }
         
-        if (dx !== 0 || dy !== 0) {
-            // Normalize diagonal movement
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.707;
-                dy *= 0.707;
-            }
-            
-            const newX = Math.max(20, Math.min(780, myPlayer.x + dx * (1/60)));
-            const newY = Math.max(20, Math.min(580, myPlayer.y + dy * (1/60)));
-            
-            // Update position locally for smoother movement
-            myPlayer.setPosition(newX, newY);
-            
-            // Send position to server
-            this.network.sendMessage("move", {
-                x: newX,
-                y: newY,
-                direction
-            });
-        }
+        // 设置速度
+        this.player.setVelocity(dx, dy);
     }
     
-    private createPlaceholderAssets(): void {
-        // Create a simple colored square as a player placeholder
+    private createTemporaryAssets(): void {
+        console.log("Creating temporary assets");
+        
+        // 创建地板纹理
         this.add.graphics()
-            .fillStyle(0x3498db)
+            .fillStyle(0x8B4513)  // 棕色
             .fillRect(0, 0, 32, 32)
+            .lineStyle(1, 0x000000)
+            .strokeRect(0, 0, 32, 32)
+            .generateTexture("floor", 32, 32);
+        
+        // 创建墙壁纹理
+        this.add.graphics()
+            .fillStyle(0x696969)  // 灰色
+            .fillRect(0, 0, 32, 32)
+            .lineStyle(1, 0x000000)
+            .strokeRect(0, 0, 32, 32)
+            .generateTexture("wall", 32, 32);
+        
+        // 创建桌子纹理
+        this.add.graphics()
+            .fillStyle(0x8FBC8F)  // 绿色
+            .fillRect(0, 0, 32, 32)
+            .lineStyle(1, 0x000000)
+            .strokeRect(0, 0, 32, 32)
+            .generateTexture("table", 32, 32);
+        
+        // 创建玩家纹理
+        this.add.graphics()
+            .fillStyle(0x3498db)  // 蓝色
+            .fillRect(0, 0, 32, 32)
+            .lineStyle(2, 0x2980b9)
+            .strokeRect(0, 0, 32, 32)
             .generateTexture("player", 32, 32);
+            
+        console.log("Temporary assets created");
     }
     
-    private createGridPattern(): void {
-        // Create a simple grid pattern for the background
-        const graphics = this.add.graphics();
+    private createSimpleMap(): void {
+        console.log("Creating simple map");
         
-        // Vertical lines
-        for (let x = 0; x <= 800; x += 40) {
-            graphics.lineStyle(1, 0x34495e, 0.5);
-            graphics.moveTo(x, 0);
-            graphics.lineTo(x, 600);
+        // 创建碰撞组
+        this.collisionGroup = this.physics.add.staticGroup();
+        
+        // 创建地板
+        for (let x = 0; x < 25; x++) {
+            for (let y = 0; y < 19; y++) {
+                this.add.image(x * 32, y * 32, "floor").setOrigin(0, 0);
+            }
         }
         
-        // Horizontal lines
-        for (let y = 0; y <= 600; y += 40) {
-            graphics.lineStyle(1, 0x34495e, 0.5);
-            graphics.moveTo(0, y);
-            graphics.lineTo(800, y);
+        // 创建墙壁 (碰撞区域)
+        // 上墙
+        for (let x = 0; x < 25; x++) {
+            this.add.image(x * 32, 0, "wall").setOrigin(0, 0);
+            const wall = this.physics.add.staticImage(x * 32, 0, "wall");
+            wall.setVisible(false);
+            this.collisionGroup.add(wall);
         }
-    }
-    
-    private async connectToServer(): Promise<void> {
-        try {
-            const room = await this.network.connect("cabin_room", { name: "Player" });
-            this.mySessionId = room.sessionId;
-            
-            // Set up listeners for game state changes
-            this.setupNetworkListeners();
-            
-            // Wait for state to be available before setting up player listeners
-            this.network.waitForState(() => {
-                console.log("Room state is now available, setting up player listeners");
-                this.setupPlayerListeners();
-                
-                // Get initial state
-                this.setupInitialPlayers();
-            });
-            
-        } catch (error) {
-            console.error("Failed to connect to server:", error);
-            
-            // Show connection error message
-            this.add.text(400, 300, "Failed to connect to server", {
-                fontSize: "24px",
-                color: "#e74c3c",
-                align: "center"
-            }).setOrigin(0.5);
-        }
-    }
-    
-    private setupNetworkListeners(): void {
-        // Listen for game messages
-        this.network.onMessage((type: string, payload: any) => {
-            switch (type) {
-                case "player_joined":
-                    console.log("Player joined:", payload.sessionId);
-                    break;
-                case "player_left":
-                    console.log("Player left:", payload.sessionId);
-                    break;
-            }
-        });
-    }
-    
-    private setupPlayerListeners(): void {
-        // Listen for new players joining
-        this.network.onPlayerAdd((player: PlayerData, sessionId: string) => {
-            const sprite = this.add.sprite(player.x, player.y, "player");
-            this.players.set(sessionId, sprite);
-            
-            // Add name label
-            const nameText = this.add.text(player.x, player.y - 20, sessionId.substring(0, 8), {
-                fontSize: "12px",
-                color: "#ffffff",
-                align: "center"
-            }).setOrigin(0.5);
-            
-            // Store reference to name text
-            sprite.setData("nameText", nameText);
-            
-            // Listen for player movement updates
-            this.setupPlayerMovementListener(player, sessionId);
-        });
         
-        // Listen for players leaving
-        this.network.onPlayerRemove((_player: PlayerData, sessionId: string) => {
-            const sprite = this.players.get(sessionId);
-            if (sprite) {
-                const nameText = sprite.getData("nameText");
-                if (nameText) nameText.destroy();
-                sprite.destroy();
-                this.players.delete(sessionId);
-            }
-        });
-    }
-    
-    private setupPlayerMovementListener(player: PlayerData, sessionId: string): void {
-        // This is a simplified implementation - in a real game, 
-        // you'd want to track changes more precisely
-        const checkInterval = setInterval(() => {
-            const sprite = this.players.get(sessionId);
-            if (!sprite) {
-                clearInterval(checkInterval);
-                return;
-            }
-            
-            if (sprite.x !== player.x || sprite.y !== player.y) {
-                sprite.setPosition(player.x, player.y);
-                
-                const nameText = sprite.getData("nameText");
-                if (nameText) {
-                    nameText.setPosition(player.x, player.y - 20);
-                }
-            }
-        }, 100);
-    }
-    
-    private setupInitialPlayers(): void {
-        // This will be handled by the onPlayerAdd events
-        // when we get the initial state from the server
+        // 下墙
+        for (let x = 0; x < 25; x++) {
+            this.add.image(x * 32, 18 * 32, "wall").setOrigin(0, 0);
+            const wall = this.physics.add.staticImage(x * 32, 18 * 32, "wall");
+            wall.setVisible(false);
+            this.collisionGroup.add(wall);
+        }
+        
+        // 左墙
+        for (let y = 0; y < 19; y++) {
+            this.add.image(0, y * 32, "wall").setOrigin(0, 0);
+            const wall = this.physics.add.staticImage(0, y * 32, "wall");
+            wall.setVisible(false);
+            this.collisionGroup.add(wall);
+        }
+        
+        // 右墙
+        for (let y = 0; y < 19; y++) {
+            this.add.image(24 * 32, y * 32, "wall").setOrigin(0, 0);
+            const wall = this.physics.add.staticImage(24 * 32, y * 32, "wall");
+            wall.setVisible(false);
+            this.collisionGroup.add(wall);
+        }
+        
+        // 添加一张桌子
+        this.add.image(10 * 32, 10 * 32, "table").setOrigin(0, 0);
+        const table = this.physics.add.staticImage(10 * 32, 10 * 32, "table");
+        table.setVisible(false);
+        this.collisionGroup.add(table);
+        
+        console.log("Simple map created");
     }
 }
