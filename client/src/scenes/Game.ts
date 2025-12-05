@@ -29,7 +29,7 @@ export class GameScene extends Phaser.Scene {
         // Set up keyboard controls
         this.cursors = this.input.keyboard?.createCursorKeys();
         
-        // Connect to the server
+        // Connect to server
         this.connectToServer();
         
         // Add UI text
@@ -149,7 +149,7 @@ export class GameScene extends Phaser.Scene {
     
     private setupNetworkListeners(): void {
         // Listen for game messages
-        this.network.onMessage((type, payload) => {
+        this.network.onMessage((type: string, payload: any) => {
             switch (type) {
                 case "player_joined":
                     console.log("Player joined:", payload.sessionId);

@@ -37,8 +37,9 @@ export interface PlayerData {
 }
 
 // 与服务器CabinRoomState Schema对应的接口
+// 注意：实际运行时，players是一个Colyseus MapSchema对象，具有onAdd/onRemove等方法
 export interface RoomState {
-  players: { [key: string]: PlayerData };
+  players: any; // 实际上是MapSchema，但使用any以避免类型冲突
   mapWidth: number;
   mapHeight: number;
 }
