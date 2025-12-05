@@ -37,13 +37,7 @@ export class GameScene extends Phaser.Scene {
         
         // Set up keyboard controls
         this.cursors = this.input.keyboard?.createCursorKeys();
-        
-        // Add UI text
-        this.add.text(10, 10, "Pixel Cabin Game", {
-            fontSize: "18px",
-            color: "#ffffff"
-        });
-        
+
         this.add.text(10, 30, "Use arrow keys to move", {
             fontSize: "14px",
             color: "#ffffff"
